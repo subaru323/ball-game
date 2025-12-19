@@ -9,6 +9,7 @@ export default function App() {
   const [rankings, setRankings] = useState([]);
   const [playerName, setPlayerName] = useState('');
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [randomFaceIndex, setRandomFaceIndex] = useState(0);
   const ballImagesRef = useRef([]);
   const audioRef = useRef(null);
   const gameoverAudioRef = useRef(null);
@@ -225,7 +226,14 @@ export default function App() {
         state.ball.dy *= -1;
         // ボールをパドルの上に配置（めり込み防止）
         state.ball.y = state.paddle.y - state.ball.radius;
-        setScore(s => s + 1);
+        
+        const newScore = score + 1;
+        setScore(newScore);
+        
+        // 緩やかな加速（15回くらいまで打てるように）
+        const speedIncrease = 1 + (newScore * 0.01); // 1回ごとに1%加速
+        state.ball.dx = (state.ball.dx > 0 ? 1.8 : -1.8) * speedIncrease;
+        state.ball.dy = (state.ball.dy > 0 ? 1.8 : -1.8) * speedIncrease;
         
         if (audioRef.current) {
           try {
@@ -241,6 +249,7 @@ export default function App() {
       // ゲームオーバー判定
       if (state.ball.y - state.ball.radius > canvas.height) {
         setGameOver(true);
+        setRandomFaceIndex(Math.floor(Math.random() * 3)); // ランダムな顔を選択
         
         // ゲームオーバー音声再生
         if (gameoverAudioRef.current) {
@@ -329,6 +338,61 @@ export default function App() {
     }
   };
 
+  // ゲームオーバー画面（専用ページ）
+  if (gameOver) {
+    const faceImages = [
+      '/597363557_1382929170227011_7254410831971597137_n.jpg',
+      '/598538302_1923393485056111_1829447140792257741_n.jpg',
+      '/598688071_1569504800708782_7631727797907983873_n.jpg'
+    ];
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#1f2937', padding: '2rem' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '4rem', fontWeight: 'bold', color: '#dc2626', marginBottom: '2rem', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>GAME OVER</h1>
+          
+          <div style={{ marginBottom: '2rem' }}>
+            <img 
+              src={faceImages[randomFaceIndex]} 
+              alt="face" 
+              style={{ 
+                width: '200px', 
+                height: '200px', 
+                borderRadius: '50%', 
+                objectFit: 'cover',
+                border: '6px solid white',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+              }} 
+            />
+          </div>
+          
+          <p style={{ fontSize: '1.5rem', color: 'white', marginBottom: '0.5rem' }}>{playerName}さんのスコア</p>
+          <p style={{ fontSize: '3rem', fontWeight: 'bold', color: '#10b981', marginBottom: '2rem' }}>{score}回</p>
+          
+          <button
+            onClick={resetGame}
+            style={{ 
+              padding: '1rem 3rem', 
+              backgroundColor: '#10b981', 
+              color: 'white', 
+              borderRadius: '0.5rem', 
+              fontSize: '1.5rem', 
+              fontWeight: 'bold', 
+              border: 'none', 
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}  
+          >
+            スタートに戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!showGame) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '1rem' }}>
@@ -390,7 +454,7 @@ export default function App() {
             style={{ border: '4px solid #1f2937', backgroundColor: 'white', maxWidth: '100%', touchAction: 'none' }}
           />
         </div>
-        {!started && !gameOver && (
+        {!started && (
           <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
             <button
               onClick={startGame}
@@ -401,19 +465,6 @@ export default function App() {
             <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280' }}>
               操作: タッチまたはマウス移動
             </p>
-          </div>
-        )}
-        {gameOver && (
-          <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
-            <p style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#dc2626', marginBottom: '0.5rem' }}>Game Over!</p>
-            <p style={{ fontSize: '1rem', color: '#374151', marginBottom: '0.75rem' }}>{playerName}さんのスコア: {score}回</p>
-            
-            <button
-              onClick={resetGame}
-              style={{ padding: '0.5rem 1.5rem', backgroundColor: '#10b981', color: 'white', borderRadius: '0.5rem', fontSize: '1rem', border: 'none', cursor: 'pointer' }}
-            >
-              タイトルに戻る
-            </button>
           </div>
         )}
       </div>
