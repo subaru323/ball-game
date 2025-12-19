@@ -13,8 +13,9 @@ export default function App() {
   const ballImagesRef = useRef([]);
   const audioRef = useRef(null);
   const gameoverAudioRef = useRef(null);
+  const scoreRef = useRef(0); // スコアをrefで管理
   const gameStateRef = useRef({
-    ball: { x: 165, y: 280, dx: 2.5, dy: -2.5, radius: 28 },
+    ball: { x: 165, y: 280, dx: 3.75, dy: -3.75, radius: 28, rotation: 0 },
     paddle: { x: 115, y: 540, width: 90, height: 18 },
     keys: { left: false, right: false },
     mouseX: 165,
@@ -151,16 +152,22 @@ export default function App() {
         const img = ballImagesRef.current[0];
         
         ctx.save();
+        
+        // 回転の中心をボールの中心に設定
+        ctx.translate(state.ball.x, state.ball.y);
+        ctx.rotate(state.ball.rotation);
+        
+        // 円形クリップ
         ctx.beginPath();
-        ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
+        ctx.arc(0, 0, state.ball.radius, 0, Math.PI * 2);
         ctx.closePath();
         ctx.clip();
         
         const size = state.ball.radius * 2;
         ctx.drawImage(
           img,
-          state.ball.x - state.ball.radius,
-          state.ball.y - state.ball.radius,
+          -state.ball.radius,
+          -state.ball.radius,
           size,
           size
         );
@@ -205,6 +212,11 @@ export default function App() {
       // ボール移動
       state.ball.x += state.ball.dx;
       state.ball.y += state.ball.dy;
+      
+      // ボールの回転（移動距離に応じて回転、加速に合わせて回転も速くなる）
+      const speedIncrease = 1 + (scoreRef.current * 0.09);
+      const speed = Math.sqrt(state.ball.dx * state.ball.dx + state.ball.dy * state.ball.dy);
+      state.ball.rotation += speed * 0.025 * speedIncrease;
 
       // 壁との衝突(左右)
       if (state.ball.x + state.ball.radius > canvas.width || state.ball.x - state.ball.radius < 0) {
@@ -230,13 +242,14 @@ export default function App() {
         state.ball.y = state.paddle.y - state.ball.radius;
         state.canScore = false; // スコアカウントを一時的に無効化
         
-        const newScore = score + 1;
-        setScore(newScore);
+        // スコアをrefで更新
+        scoreRef.current += 1;
+        setScore(scoreRef.current);
         
         // 緩やかな加速（15回くらいまで打てるように）
-        const speedIncrease = 1 + (newScore * 0.01); // 1回ごとに1%加速
-        state.ball.dx = (state.ball.dx > 0 ? 2.5 : -2.5) * speedIncrease;
-        state.ball.dy = (state.ball.dy > 0 ? 2.5 : -2.5) * speedIncrease;
+        const speedIncrease = 1 + (scoreRef.current * 0.09); // 1回ごとに9%加速
+        state.ball.dx = (state.ball.dx > 0 ? 3.75 : -3.75) * speedIncrease;
+        state.ball.dy = (state.ball.dy > 0 ? 3.75 : -3.75) * speedIncrease;
         
         if (audioRef.current) {
           try {
@@ -269,7 +282,7 @@ export default function App() {
           }
         }
         
-        if (score > 0 && playerName.trim()) {
+        if (scoreRef.current > 0 && playerName.trim()) {
           saveScore(playerName);
         }
         return;
@@ -280,20 +293,26 @@ export default function App() {
 
       // ボール描画
       if (ballImagesRef.current.length > 0) {
-        const imageIndex = Math.floor(score / 10) % ballImagesRef.current.length;
+        const imageIndex = Math.floor(scoreRef.current / 10) % ballImagesRef.current.length;
         const img = ballImagesRef.current[imageIndex];
         
         ctx.save();
+        
+        // 回転の中心をボールの中心に設定
+        ctx.translate(state.ball.x, state.ball.y);
+        ctx.rotate(state.ball.rotation);
+        
+        // 円形クリップ
         ctx.beginPath();
-        ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
+        ctx.arc(0, 0, state.ball.radius, 0, Math.PI * 2);
         ctx.closePath();
         ctx.clip();
         
         const size = state.ball.radius * 2;
         ctx.drawImage(
           img,
-          state.ball.x - state.ball.radius,
-          state.ball.y - state.ball.radius,
+          -state.ball.radius,
+          -state.ball.radius,
           size,
           size
         );
@@ -322,19 +341,30 @@ export default function App() {
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchstart', handleTouchStart);
     };
-  }, [gameOver, started, imagesLoaded, showGame, score, playerName]);
+  }, [gameOver, started, imagesLoaded, showGame, playerName]);
 
   const resetGame = () => {
     const state = gameStateRef.current;
-    state.ball = { x: 165, y: 280, dx: 2.5, dy: -2.5, radius: 28 };
+    state.ball = { x: 165, y: 280, dx: 3.75, dy: -3.75, radius: 28, rotation: 0 };
     state.paddle = { x: 115, y: 540, width: 90, height: 18 };
     state.touchX = null;
     state.mouseX = 165;
     state.canScore = true;
+    scoreRef.current = 0;
     setScore(0);
     setGameOver(false);
     setStarted(false);
     setShowGame(false);
+    
+    // 全ての音声を停止
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (gameoverAudioRef.current) {
+      gameoverAudioRef.current.pause();
+      gameoverAudioRef.current.currentTime = 0;
+    }
   };
 
   const startGame = () => {
