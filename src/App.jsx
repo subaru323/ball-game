@@ -12,7 +12,7 @@ export default function App() {
   const ballImagesRef = useRef([]);
   const audioRef = useRef(null);
   const gameStateRef = useRef({
-    ball: { x: 165, y: 280, dx: 4, dy: -4, radius: 16 },
+    ball: { x: 165, y: 280, dx: 1.8, dy: -1.8, radius: 28 },
     paddle: { x: 115, y: 540, width: 90, height: 18 },
     keys: { left: false, right: false },
     mouseX: 165,
@@ -294,7 +294,7 @@ export default function App() {
 
   const resetGame = () => {
     const state = gameStateRef.current;
-    state.ball = { x: 165, y: 280, dx: 4, dy: -4, radius: 16 };
+    state.ball = { x: 165, y: 280, dx: 1.8, dy: -1.8, radius: 28 };
     state.paddle = { x: 115, y: 540, width: 90, height: 18 };
     state.touchX = null;
     state.mouseX = 165;
