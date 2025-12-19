@@ -16,7 +16,7 @@ export default function App() {
     paddle: { x: 115, y: 540, width: 90, height: 18 },
     keys: { left: false, right: false },
     mouseX: 165,
-    touchX: 165
+    touchX: null
   });
 
   useEffect(() => {
@@ -96,6 +96,8 @@ export default function App() {
     if (!showGame) return;
 
     const canvas = canvasRef.current;
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
     const state = gameStateRef.current;
 
@@ -111,19 +113,23 @@ export default function App() {
 
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect();
-      state.mouseX = e.clientX - rect.left;
+      const scaleX = canvas.width / rect.width;
+      state.mouseX = (e.clientX - rect.left) * scaleX;
+      state.touchX = null; // マウス操作時はタッチをリセット
     };
 
     const handleTouchMove = (e) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
-      state.touchX = e.touches[0].clientX - rect.left;
+      const scaleX = canvas.width / rect.width;
+      state.touchX = (e.touches[0].clientX - rect.left) * scaleX;
     };
 
     const handleTouchStart = (e) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
-      state.touchX = e.touches[0].clientX - rect.left;
+      const scaleX = canvas.width / rect.width;
+      state.touchX = (e.touches[0].clientX - rect.left) * scaleX;
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -176,6 +182,7 @@ export default function App() {
     const gameLoop = () => {
       if (gameOver || !started) return;
 
+      // キーボード操作
       if (state.keys.left && state.paddle.x > 0) {
         state.paddle.x -= 6;
       }
@@ -183,27 +190,37 @@ export default function App() {
         state.paddle.x += 6;
       }
       
-      const targetX = state.touchX || state.mouseX;
-      state.paddle.x = Math.max(0, Math.min(canvas.width - state.paddle.width, targetX - state.paddle.width / 2));
+      // マウス/タッチ操作（キーボード操作していない時のみ）
+      if (!state.keys.left && !state.keys.right) {
+        const targetX = state.touchX !== null ? state.touchX : state.mouseX;
+        state.paddle.x = Math.max(0, Math.min(canvas.width - state.paddle.width, targetX - state.paddle.width / 2));
+      }
 
+      // ボール移動
       state.ball.x += state.ball.dx;
       state.ball.y += state.ball.dy;
 
+      // 壁との衝突(左右)
       if (state.ball.x + state.ball.radius > canvas.width || state.ball.x - state.ball.radius < 0) {
         state.ball.dx *= -1;
       }
 
+      // 壁との衝突(上)
       if (state.ball.y - state.ball.radius < 0) {
         state.ball.dy *= -1;
       }
 
+      // パドルとの衝突判定（より正確に）
       if (
-        state.ball.y + state.ball.radius > state.paddle.y &&
-        state.ball.y - state.ball.radius < state.paddle.y + state.paddle.height &&
-        state.ball.x > state.paddle.x &&
-        state.ball.x < state.paddle.x + state.paddle.width
+        state.ball.y + state.ball.radius >= state.paddle.y &&
+        state.ball.y - state.ball.radius <= state.paddle.y + state.paddle.height &&
+        state.ball.x + state.ball.radius >= state.paddle.x &&
+        state.ball.x - state.ball.radius <= state.paddle.x + state.paddle.width &&
+        state.ball.dy > 0 // 下方向に移動中のみ
       ) {
         state.ball.dy *= -1;
+        // ボールをパドルの上に配置（めり込み防止）
+        state.ball.y = state.paddle.y - state.ball.radius;
         setScore(s => s + 1);
         
         if (audioRef.current) {
@@ -217,7 +234,8 @@ export default function App() {
         }
       }
 
-      if (state.ball.y + state.ball.radius > canvas.height) {
+      // ゲームオーバー判定
+      if (state.ball.y - state.ball.radius > canvas.height) {
         setGameOver(true);
         if (score > 0 && playerName.trim()) {
           saveScore(playerName);
@@ -225,8 +243,10 @@ export default function App() {
         return;
       }
 
+      // 描画
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // ボール描画
       if (ballImagesRef.current.length > 0) {
         const imageIndex = Math.floor(score / 10) % ballImagesRef.current.length;
         const img = ballImagesRef.current[imageIndex];
@@ -254,6 +274,7 @@ export default function App() {
         ctx.closePath();
       }
 
+      // パドル描画
       ctx.fillStyle = '#1f2937';
       ctx.fillRect(state.paddle.x, state.paddle.y, state.paddle.width, state.paddle.height);
 
@@ -275,7 +296,8 @@ export default function App() {
     const state = gameStateRef.current;
     state.ball = { x: 165, y: 280, dx: 4, dy: -4, radius: 16 };
     state.paddle = { x: 115, y: 540, width: 90, height: 18 };
-    state.touchX = 165;
+    state.touchX = null;
+    state.mouseX = 165;
     setScore(0);
     setGameOver(false);
     setStarted(false);
