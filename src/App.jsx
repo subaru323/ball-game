@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function BallGame() {
+export default function App() {
   const canvasRef = useRef(null);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
@@ -21,11 +21,10 @@ export default function BallGame() {
 
   useEffect(() => {
     const loadImages = async () => {
-      // 相対パスに変更
       const imagePaths = [
-        './597363557_1382929170227011_7254410831971597137_n.jpg',
-        './598538302_1923393485056111_1829447140792257741_n.jpg',
-        './598688071_1569504800708782_7631727797907983873_n.jpg'
+        '/597363557_1382929170227011_7254410831971597137_n.jpg',
+        '/598538302_1923393485056111_1829447140792257741_n.jpg',
+        '/598688071_1569504800708782_7631727797907983873_n.jpg'
       ];
 
       const loadedImages = await Promise.all(
@@ -48,9 +47,8 @@ export default function BallGame() {
 
     loadImages();
     
-    // 音声ファイルの読み込み
     try {
-      audioRef.current = new Audio('./レコーディング 2025-12-18 180109.mp4');
+      audioRef.current = new Audio('/レコーディング 2025-12-18 180109.mp4');
       audioRef.current.preload = 'auto';
     } catch (error) {
       console.log('音声読み込みエラー:', error);
@@ -63,7 +61,6 @@ export default function BallGame() {
 
   const loadRankings = async () => {
     try {
-      // localStorageにフォールバック
       const stored = localStorage.getItem('ball-game-rankings');
       if (stored) {
         setRankings(JSON.parse(stored));
@@ -135,11 +132,9 @@ export default function BallGame() {
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
 
-    // 初期描画（スタート前）
     if (!started) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // ボール描画（画像）
       if (ballImagesRef.current.length > 0) {
         const img = ballImagesRef.current[0];
         
@@ -159,7 +154,6 @@ export default function BallGame() {
         );
         ctx.restore();
       } else {
-        // フォールバック
         ctx.beginPath();
         ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
         ctx.fillStyle = '#3b82f6';
@@ -167,7 +161,6 @@ export default function BallGame() {
         ctx.closePath();
       }
 
-      // パドル描画
       ctx.fillStyle = '#1f2937';
       ctx.fillRect(state.paddle.x, state.paddle.y, state.paddle.width, state.paddle.height);
       
@@ -183,7 +176,6 @@ export default function BallGame() {
     const gameLoop = () => {
       if (gameOver || !started) return;
 
-      // パドル移動
       if (state.keys.left && state.paddle.x > 0) {
         state.paddle.x -= 6;
       }
@@ -191,25 +183,20 @@ export default function BallGame() {
         state.paddle.x += 6;
       }
       
-      // マウス/タッチ操作
       const targetX = state.touchX || state.mouseX;
       state.paddle.x = Math.max(0, Math.min(canvas.width - state.paddle.width, targetX - state.paddle.width / 2));
 
-      // ボール移動
       state.ball.x += state.ball.dx;
       state.ball.y += state.ball.dy;
 
-      // 壁との衝突(左右)
       if (state.ball.x + state.ball.radius > canvas.width || state.ball.x - state.ball.radius < 0) {
         state.ball.dx *= -1;
       }
 
-      // 壁との衝突(上)
       if (state.ball.y - state.ball.radius < 0) {
         state.ball.dy *= -1;
       }
 
-      // パドルとの衝突
       if (
         state.ball.y + state.ball.radius > state.paddle.y &&
         state.ball.y - state.ball.radius < state.paddle.y + state.paddle.height &&
@@ -219,7 +206,6 @@ export default function BallGame() {
         state.ball.dy *= -1;
         setScore(s => s + 1);
         
-        // 効果音再生（ランダムな再生速度）
         if (audioRef.current) {
           try {
             audioRef.current.currentTime = 0;
@@ -231,7 +217,6 @@ export default function BallGame() {
         }
       }
 
-      // ゲームオーバー判定
       if (state.ball.y + state.ball.radius > canvas.height) {
         setGameOver(true);
         if (score > 0 && playerName.trim()) {
@@ -240,10 +225,8 @@ export default function BallGame() {
         return;
       }
 
-      // 描画
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // ボール描画（画像）
       if (ballImagesRef.current.length > 0) {
         const imageIndex = Math.floor(score / 10) % ballImagesRef.current.length;
         const img = ballImagesRef.current[imageIndex];
@@ -264,7 +247,6 @@ export default function BallGame() {
         );
         ctx.restore();
       } else {
-        // フォールバック（画像未読み込み時）
         ctx.beginPath();
         ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
         ctx.fillStyle = '#3b82f6';
@@ -272,7 +254,6 @@ export default function BallGame() {
         ctx.closePath();
       }
 
-      // パドル描画
       ctx.fillStyle = '#1f2937';
       ctx.fillRect(state.paddle.x, state.paddle.y, state.paddle.width, state.paddle.height);
 
@@ -288,7 +269,7 @@ export default function BallGame() {
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchstart', handleTouchStart);
     };
-  }, [gameOver, started, imagesLoaded, showGame]);
+  }, [gameOver, started, imagesLoaded, showGame, score, playerName]);
 
   const resetGame = () => {
     const state = gameStateRef.current;
@@ -311,20 +292,19 @@ export default function BallGame() {
     }
   };
 
-  // スタート画面（名前入力とランキング）
   if (!showGame) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-          <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">Ball Game</h1>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '1rem' }}>
+        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '28rem' }}>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', textAlign: 'center', marginBottom: '1.5rem', color: '#1f2937' }}>Ball Game</h1>
           
-          <div className="mb-6">
+          <div style={{ marginBottom: '1.5rem' }}>
             <input
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="名前を入力してください"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center text-lg"
+              style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'center', fontSize: '1.125rem' }}
               maxLength={20}
               onKeyPress={(e) => e.key === 'Enter' && playerName.trim() && goToGame()}
             />
@@ -333,21 +313,21 @@ export default function BallGame() {
           <button
             onClick={goToGame}
             disabled={!playerName.trim()}
-            className="w-full px-8 py-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-xl font-bold mb-6 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            style={{ width: '100%', padding: '1rem 2rem', backgroundColor: playerName.trim() ? '#10b981' : '#d1d5db', color: 'white', borderRadius: '0.5rem', fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', cursor: playerName.trim() ? 'pointer' : 'not-allowed', border: 'none' }}
           >
             START
           </button>
           
           {rankings.length > 0 && (
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h2 className="text-xl font-bold text-center mb-3 text-gray-800">ランキング TOP10</h2>
-              <div className="space-y-2">
+            <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', textAlign: 'center', marginBottom: '0.75rem', color: '#1f2937' }}>ランキング TOP10</h2>
+              <div>
                 {rankings.map((entry, index) => (
-                  <div key={index} className="flex justify-between items-center text-sm py-2 border-b border-gray-200">
-                    <span className="font-semibold text-gray-700">
+                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>
+                    <span style={{ fontWeight: '600', color: '#374151' }}>
                       {index + 1}. {entry.name}
                     </span>
-                    <span className="text-blue-600 font-bold">{entry.score}回</span>
+                    <span style={{ color: '#2563eb', fontWeight: 'bold' }}>{entry.score}回</span>
                   </div>
                 ))}
               </div>
@@ -358,43 +338,42 @@ export default function BallGame() {
     );
   }
 
-  // ゲーム画面
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="bg-white p-4 rounded-lg shadow-lg">
-        <h1 className="text-xl font-bold text-center mb-2 text-gray-800">Ball Game</h1>
-        <div className="mb-2 text-center">
-          <span className="text-base font-semibold text-gray-700">回数: {score}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '1rem' }}>
+      <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', textAlign: 'center', marginBottom: '0.5rem', color: '#1f2937' }}>Ball Game</h1>
+        <div style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
+          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#374151' }}>回数: {score}</span>
         </div>
-        <div className="flex justify-center">
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <canvas
             ref={canvasRef}
             width={330}
             height={580}
-            className="border-4 border-gray-800 bg-white max-w-full touch-none"
+            style={{ border: '4px solid #1f2937', backgroundColor: 'white', maxWidth: '100%', touchAction: 'none' }}
           />
         </div>
         {!started && !gameOver && (
-          <div className="mt-3 text-center">
+          <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
             <button
               onClick={startGame}
-              className="px-8 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-lg font-bold"
+              style={{ padding: '0.75rem 2rem', backgroundColor: '#10b981', color: 'white', borderRadius: '0.5rem', fontSize: '1.125rem', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
             >
               ゲーム開始
             </button>
-            <p className="mt-2 text-xs text-gray-600">
+            <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280' }}>
               操作: タッチまたはマウス移動
             </p>
           </div>
         )}
         {gameOver && (
-          <div className="mt-3 text-center">
-            <p className="text-lg font-bold text-red-600 mb-2">Game Over!</p>
-            <p className="text-base text-gray-700 mb-3">{playerName}さんのスコア: {score}回</p>
+          <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#dc2626', marginBottom: '0.5rem' }}>Game Over!</p>
+            <p style={{ fontSize: '1rem', color: '#374151', marginBottom: '0.75rem' }}>{playerName}さんのスコア: {score}回</p>
             
             <button
               onClick={resetGame}
-              className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-base"
+              style={{ padding: '0.5rem 1.5rem', backgroundColor: '#10b981', color: 'white', borderRadius: '0.5rem', fontSize: '1rem', border: 'none', cursor: 'pointer' }}
             >
               タイトルに戻る
             </button>
