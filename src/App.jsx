@@ -14,7 +14,7 @@ export default function App() {
   const audioRef = useRef(null);
   const gameoverAudioRef = useRef(null);
   const gameStateRef = useRef({
-    ball: { x: 165, y: 280, dx: 2.2, dy: -2.2, radius: 28 },
+    ball: { x: 165, y: 280, dx: 2.5, dy: -2.5, radius: 28 },
     paddle: { x: 115, y: 540, width: 90, height: 18 },
     keys: { left: false, right: false },
     mouseX: 165,
@@ -235,8 +235,8 @@ export default function App() {
         
         // 緩やかな加速（15回くらいまで打てるように）
         const speedIncrease = 1 + (newScore * 0.01); // 1回ごとに1%加速
-        state.ball.dx = (state.ball.dx > 0 ? 2.2 : -2.2) * speedIncrease;
-        state.ball.dy = (state.ball.dy > 0 ? 2.2 : -2.2) * speedIncrease;
+        state.ball.dx = (state.ball.dx > 0 ? 2.5 : -2.5) * speedIncrease;
+        state.ball.dy = (state.ball.dy > 0 ? 2.5 : -2.5) * speedIncrease;
         
         if (audioRef.current) {
           try {
@@ -326,7 +326,7 @@ export default function App() {
 
   const resetGame = () => {
     const state = gameStateRef.current;
-    state.ball = { x: 165, y: 280, dx: 2.2, dy: -2.2, radius: 28 };
+    state.ball = { x: 165, y: 280, dx: 2.5, dy: -2.5, radius: 28 };
     state.paddle = { x: 115, y: 540, width: 90, height: 18 };
     state.touchX = null;
     state.mouseX = 165;
