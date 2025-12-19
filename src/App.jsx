@@ -14,11 +14,12 @@ export default function App() {
   const audioRef = useRef(null);
   const gameoverAudioRef = useRef(null);
   const gameStateRef = useRef({
-    ball: { x: 165, y: 280, dx: 1.8, dy: -1.8, radius: 28 },
+    ball: { x: 165, y: 280, dx: 2.2, dy: -2.2, radius: 28 },
     paddle: { x: 115, y: 540, width: 90, height: 18 },
     keys: { left: false, right: false },
     mouseX: 165,
-    touchX: null
+    touchX: null,
+    canScore: true // スコアカウント可能フラグ
   });
 
   useEffect(() => {
@@ -221,19 +222,21 @@ export default function App() {
         state.ball.y - state.ball.radius <= state.paddle.y + state.paddle.height &&
         state.ball.x + state.ball.radius >= state.paddle.x &&
         state.ball.x - state.ball.radius <= state.paddle.x + state.paddle.width &&
-        state.ball.dy > 0 // 下方向に移動中のみ
+        state.ball.dy > 0 && // 下方向に移動中のみ
+        state.canScore // スコアカウント可能な時のみ
       ) {
         state.ball.dy *= -1;
         // ボールをパドルの上に配置（めり込み防止）
         state.ball.y = state.paddle.y - state.ball.radius;
+        state.canScore = false; // スコアカウントを一時的に無効化
         
         const newScore = score + 1;
         setScore(newScore);
         
         // 緩やかな加速（15回くらいまで打てるように）
         const speedIncrease = 1 + (newScore * 0.01); // 1回ごとに1%加速
-        state.ball.dx = (state.ball.dx > 0 ? 1.8 : -1.8) * speedIncrease;
-        state.ball.dy = (state.ball.dy > 0 ? 1.8 : -1.8) * speedIncrease;
+        state.ball.dx = (state.ball.dx > 0 ? 2.2 : -2.2) * speedIncrease;
+        state.ball.dy = (state.ball.dy > 0 ? 2.2 : -2.2) * speedIncrease;
         
         if (audioRef.current) {
           try {
@@ -244,6 +247,11 @@ export default function App() {
             console.log('音声再生エラー:', error);
           }
         }
+      }
+      
+      // ボールがパドルから離れたらスコアカウントを再度有効化
+      if (state.ball.y < state.paddle.y - state.ball.radius - 10) {
+        state.canScore = true;
       }
 
       // ゲームオーバー判定
@@ -318,10 +326,11 @@ export default function App() {
 
   const resetGame = () => {
     const state = gameStateRef.current;
-    state.ball = { x: 165, y: 280, dx: 1.8, dy: -1.8, radius: 28 };
+    state.ball = { x: 165, y: 280, dx: 2.2, dy: -2.2, radius: 28 };
     state.paddle = { x: 115, y: 540, width: 90, height: 18 };
     state.touchX = null;
     state.mouseX = 165;
+    state.canScore = true;
     setScore(0);
     setGameOver(false);
     setStarted(false);
