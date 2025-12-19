@@ -11,6 +11,7 @@ export default function App() {
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const ballImagesRef = useRef([]);
   const audioRef = useRef(null);
+  const gameoverAudioRef = useRef(null);
   const gameStateRef = useRef({
     ball: { x: 165, y: 280, dx: 1.8, dy: -1.8, radius: 28 },
     paddle: { x: 115, y: 540, width: 90, height: 18 },
@@ -50,6 +51,9 @@ export default function App() {
     try {
       audioRef.current = new Audio('/レコーディング 2025-12-18 180109.mp4');
       audioRef.current.preload = 'auto';
+      
+      gameoverAudioRef.current = new Audio('/gameover_sound.mp4');
+      gameoverAudioRef.current.preload = 'auto';
     } catch (error) {
       console.log('音声読み込みエラー:', error);
     }
@@ -237,6 +241,17 @@ export default function App() {
       // ゲームオーバー判定
       if (state.ball.y - state.ball.radius > canvas.height) {
         setGameOver(true);
+        
+        // ゲームオーバー音声再生
+        if (gameoverAudioRef.current) {
+          try {
+            gameoverAudioRef.current.currentTime = 0;
+            gameoverAudioRef.current.play().catch(e => console.log('ゲームオーバー音声再生エラー:', e));
+          } catch (error) {
+            console.log('ゲームオーバー音声再生エラー:', error);
+          }
+        }
+        
         if (score > 0 && playerName.trim()) {
           saveScore(playerName);
         }
